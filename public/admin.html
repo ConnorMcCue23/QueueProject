@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Queue Admin</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="wrap admin-wrap">
+    <header>
+      <h1>Queue</h1>
+      <p class="muted">Live queues: Main and Return</p>
+      <a href="index.html" class="btn-sm"
+         style="position:fixed; top:20px; left:20px; z-index:1000;
+                text-decoration:none; width:auto; display:inline-block; text-align:center;">
+        Home
+      </a>
+    </header>
+
+    <section class="card main-queue">
+      <h3>Main Queue</h3>
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:8px;">Name</th>
+            <th style="text-align:left; padding:8px;">Notify</th>
+            <th style="text-align:left; padding:8px;">Phone</th>
+            <th style="text-align:left; padding:8px;">Email</th>
+            <th style="text-align:left; padding:8px;">Joined</th>
+            <th style="text-align:left; padding:8px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="queueBodyMain"></tbody>
+      </table>
+      <p id="emptyMain" class="muted" style="margin-top:12px; display:none;">
+        No entries in the main queue.
+      </p>
+    </section>
+
+    <aside class="card return-sidebar">
+      <h3 style="margin-top:0;">Return Queue</h3>
+      <ul id="returnList" class="return-list"></ul>
+      <p id="emptyReturn" class="muted" style="margin-top:8px; display:none;">
+        Empty for now.
+      </p>
+    </aside>
+  </main>
+
+  <script src="config.js"></script>
+
+  <script type="module" src="./admin.js"></script>
+</body>
+</html>
