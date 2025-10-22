@@ -1,4 +1,5 @@
 // admin.js
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import {
   getFirestore, connectFirestoreEmulator,
@@ -18,7 +19,6 @@ const auth = getAuth(app);
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
   connectFirestoreEmulator(db, "localhost", 8080);
   connectAuthEmulator(auth, "http://localhost:9099");
-  console.log("[admin] Connected to emulators (Firestore @8080, Auth @9099)");
 }
 
 /* --- DOM refs --- */
@@ -26,7 +26,7 @@ const bodyMain    = document.getElementById("queueBodyMain");
 const emptyMain   = document.getElementById("emptyMain");
 const bodyReturn  = document.getElementById("queueBodyReturn");
 const emptyReturn = document.getElementById("emptyReturn");
-const returnBlock = document.getElementById("returnBlock"); // whole Return card (hide for non-admin)
+const returnBlock = document.getElementById("returnBlock");
 
 /* --- helpers --- */
 const fmt = (ts) => {
@@ -36,6 +36,7 @@ const fmt = (ts) => {
     month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit"
   }).format(d);
 };
+
 const btn = (label, action, id) =>
   `<button data-action="${action}" data-id="${id}" class="btn-sm">${label}</button>`;
 
@@ -51,7 +52,7 @@ let unsubWaiting = null;
 let unsubReturn  = null;
 
 function attachListeners(baseCollection, isAdmin) {
-  // Clean up old listeners
+  // Clean up any old listeners
   unsubWaiting?.(); unsubWaiting = null;
   unsubReturn?.();  unsubReturn  = null;
 
@@ -61,6 +62,7 @@ function attachListeners(baseCollection, isAdmin) {
     where("status", "==", "waiting"),
     orderBy("createdAt", "asc")
   );
+
   unsubWaiting = onSnapshot(qWaiting, (snap) => {
     bodyMain.innerHTML = "";
     emptyMain.style.display = snap.empty ? "block" : "none";
@@ -95,22 +97,24 @@ function attachListeners(baseCollection, isAdmin) {
     });
   }, (err) => console.error("Main queue error:", err));
 
-  // RETURN queue: only for admins
-  if (isAdmin) {
-    returnBlock.style.display = ""; // show card
+  // RETURN queue: attach ONLY for admins and when DOM nodes exist.
+  if (isAdmin && bodyReturn && emptyReturn && returnBlock) {
+    returnBlock.style.display = "block";
 
     const qReturn = query(
       collection(db, baseCollection),
       where("status", "==", "return"),
       orderBy("createdAt", "asc")
     );
+
     unsubReturn = onSnapshot(qReturn, (snap) => {
       bodyReturn.innerHTML = "";
       emptyReturn.style.display = snap.empty ? "block" : "none";
 
       snap.forEach((row) => {
         const d = row.data();
-        const cols = `
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.notify ?? ""}</td>
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.phone ?? ""}</td>
@@ -121,16 +125,14 @@ function attachListeners(baseCollection, isAdmin) {
             ${btn("Remove", "remove", row.id)}
           </td>
         `;
-        const tr = document.createElement("tr");
-        tr.innerHTML = cols;
         bodyReturn.appendChild(tr);
       });
     }, (err) => console.error("Return queue error:", err));
   } else {
-    // Hide the Return card and ensure we aren't listening to it
-    returnBlock.style.display = "none";
-    emptyReturn.style.display = "none";
-    bodyReturn.innerHTML = "";
+    // Hide and ensure no listener/content remains for non-admins or missing DOM
+    if (returnBlock) returnBlock.style.display = "none";
+    if (emptyReturn) emptyReturn.style.display = "none";
+    if (bodyReturn) bodyReturn.innerHTML = "";
     unsubReturn?.(); unsubReturn = null;
   }
 }
@@ -150,9 +152,10 @@ document.addEventListener("click", async (e) => {
   const id     = t.getAttribute("data-id");
   if (!action || !id) return;
 
+  // Only allow actions for admins
   const user  = auth.currentUser;
   const admin = await isAdminEmail(user?.email);
-  if (!admin) return; // ignore clicks for viewers
+  if (!admin) return;
 
   try {
     if (action === "serve") {
@@ -168,7 +171,6 @@ document.addEventListener("click", async (e) => {
           name: "", status: "served", servedAt: serverTimestamp(), createdAt: serverTimestamp()
         });
       });
-
     } else if (action === "return") {
       await updateDoc(doc(db, "queue_entries", id), {
         status: "return",
@@ -182,7 +184,6 @@ document.addEventListener("click", async (e) => {
           name: "", status: "return", returnAt: serverTimestamp(), createdAt: serverTimestamp()
         });
       });
-
     } else if (action === "remove") {
       await deleteDoc(doc(db, "queue_entries", id));
       await deleteDoc(doc(db, "queue_public", id)).catch(() => {});
