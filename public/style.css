@@ -8,6 +8,7 @@
     --muted:#e6e7ea;
     --primary:#E87722;
     --primary-strong:#e2863f;
+    --maroon:#861F41;
     --ok:#10b981;
     --err:#ef4444;
     --ring:#60a5fa;
@@ -35,7 +36,7 @@ body {
 }
 
 .wrap { 
-    width: min(1200px, 100%);
+    width: min(900px, 100%);
 }
 
 .card {
@@ -288,3 +289,44 @@ select.control option[value=""] {
   max-width: 1100px;  /* control total card width */
 }
 
+/* Make the two buttons identical inside the row */
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;      /* stretch both to same height */
+  gap: 16px;
+  width: 100%;
+  max-width: 600px;
+  margin: 20px auto 20px; /* top and bottom spacing buffer */
+}
+
+.button-row .btn-sm {
+  flex: 1;
+  display: flex;             /* identical for <a> and <button> */
+  align-items: center;
+  justify-content: center;
+  height: 60px;              /* same tallness */
+  padding: 0;                /* handled by height */
+  margin: 0;                 /* override global margin-bottom */
+  line-height: 1;            /* consistent text box */
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+/* Ensure <a> version behaves exactly like <button> */
+.button-row a.btn-sm { text-decoration: none; }
+
+/* Hover: orange gradient + shadow */
+.button-row .btn-sm:hover, .home-button:hover, .btn:hover {
+  background: linear-gradient(180deg, var(--maroon) 0%, var(--primary-strong) 100%);
+  color: #fff;
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+/* Active (pressed) */
+.button-row .btn-sm:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
