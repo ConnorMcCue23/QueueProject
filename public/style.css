@@ -35,7 +35,7 @@ body {
 }
 
 .wrap { 
-    width: min(760px, 100%);
+    width: min(1200px, 100%);
 }
 
 .card {
@@ -157,8 +157,9 @@ input.control:focus, select.control:focus, textarea.control:focus {
   position: absolute;
   top: 20px;
   right: 20px;
-  width: 200px;
+  width: clamp(100px, 15vw, 200px); /* scales between 100–220px */
   height: auto;
+  object-fit: contain;
 }
 
 .desc {
@@ -271,3 +272,19 @@ select.control option[value=""] {
 /* Space between stacked queue cards */
 .queue-block { margin-bottom: 10px; }
 .queue-block:last-of-type { margin-bottom: 0; }
+
+.admin-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.admin-wrap .queues {
+  width: 100%;
+}
+
+.admin-wrap .queue-block {
+  width: 100%;
+  max-width: 1100px;  /* control total card width */
+}
+
