@@ -330,3 +330,33 @@ select.control option[value=""] {
   transform: translateY(0);
   box-shadow: 0 3px 6px rgba(0,0,0,0.1);
 }
+
+.btn-home {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  color: #333;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border: 1px solid rgba(0,0,0,.15);
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  transition: background .2s ease, transform .05s ease, color .2s ease;
+}
+
+.btn-home:hover {
+  background: var(--primary);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.btn-home:active {
+  transform: scale(0.97);
+}
