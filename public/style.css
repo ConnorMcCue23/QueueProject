@@ -266,3 +266,8 @@ select.control option[value=""] {
 /* Hover colors */
 .return-sidebar .btn-sm[data-action="serve"]:hover   { background:#10b981; color:#fff; }
 .return-sidebar .btn-sm[data-action="remove"]:hover  { background:#ef4444; color:#fff; }
+
+/* Stack the two full-width queue cards with a little gap */
+.queue-block + .queue-block {
+  margin-top: 18px;
+}

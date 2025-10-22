@@ -18,7 +18,8 @@
       </a>
     </header>
 
-    <section class="card main-queue">
+    <!-- Main Queue -->
+    <section class="card queue-block">
       <h3>Main Queue</h3>
       <table style="width:100%; border-collapse:collapse;">
         <thead>
@@ -38,17 +39,29 @@
       </p>
     </section>
 
-    <aside class="card return-sidebar">
-      <h3 style="margin-top:0;">Return Queue</h3>
-      <ul id="returnList" class="return-list"></ul>
-      <p id="emptyReturn" class="muted" style="margin-top:8px; display:none;">
+    <!-- Return Queue (same size/styles as main) -->
+    <section class="card queue-block">
+      <h3>Return Queue</h3>
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:8px;">Name</th>
+            <th style="text-align:left; padding:8px;">Notify</th>
+            <th style="text-align:left; padding:8px;">Phone</th>
+            <th style="text-align:left; padding:8px;">Email</th>
+            <th style="text-align:left; padding:8px;">Joined</th>
+            <th style="text-align:left; padding:8px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="queueBodyReturn"></tbody>
+      </table>
+      <p id="emptyReturn" class="muted" style="margin-top:12px; display:none;">
         Empty for now.
       </p>
-    </aside>
+    </section>
   </main>
 
   <script src="config.js"></script>
-
   <script type="module" src="./admin.js"></script>
 </body>
 </html>

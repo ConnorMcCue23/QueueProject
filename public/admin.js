@@ -23,11 +23,10 @@ if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
 }
 
 /* --- DOM refs --- */
-const bodyMain = document.getElementById("queueBodyMain");
-const emptyMain = document.getElementById("emptyMain");
-const bodyReturn = document.getElementById("queueBodyReturn");
+const bodyMain    = document.getElementById("queueBodyMain");
+const emptyMain   = document.getElementById("emptyMain");
+const bodyReturn  = document.getElementById("queueBodyReturn");
 const emptyReturn = document.getElementById("emptyReturn");
-const returnList = document.getElementById("returnList");
 
 /* --- helpers --- */
 const fmt = (ts) => {
@@ -65,10 +64,10 @@ function attachListeners(baseCollection, isAdmin) {
     const qReturn = query(
         collection(db, baseCollection),
         where("status", "==", "return"),
-        // 'createdAt' is a stable sort even if 'returnAt' is missing in public mirror
         orderBy("createdAt", "asc")
     );
 
+    // MAIN: table rows
     unsubWaiting = onSnapshot(qWaiting, (snap) => {
         bodyMain.innerHTML = "";
         emptyMain.style.display = snap.empty ? "block" : "none";
@@ -104,26 +103,38 @@ function attachListeners(baseCollection, isAdmin) {
         });
     }, (err) => console.error("Main queue error:", err));
 
+    // RETURN: same table structure & width as main (Serve / Remove)
     unsubReturn = onSnapshot(qReturn, (snap) => {
-        returnList.innerHTML = "";
+        bodyReturn.innerHTML = "";
         emptyReturn.style.display = snap.empty ? "block" : "none";
 
         snap.forEach((row) => {
             const d = row.data();
 
-            const li = document.createElement("li");
-            if (isAdmin) {
-                li.innerHTML = `
-          <span class="name">${d.name ?? ""}</span>
-          <div style="display:flex; gap:6px;">
-            ${btn("Serve", "serve", row.id).replace('btn-sm', 'btn-sm return-btn')}
-            ${btn("Remove", "remove", row.id).replace('btn-sm', 'btn-sm return-btn')}
-          </div>
+            const cols = isAdmin
+                ? `
+          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
+          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.notify ?? ""}</td>
+          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.phone ?? ""}</td>
+          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.email ?? ""}</td>
+          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${fmt(d.createdAt)}</td>
+          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">
+            ${btn("Serve", "serve", row.id)}
+            ${btn("Remove", "remove", row.id)}
+          </td>
+        `
+                : `
+          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
+          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
+          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
+          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
+          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${fmt(d.createdAt)}</td>
+          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
         `;
-            } else {
-                li.innerHTML = `<span class="name">${d.name ?? ""}</span>`;
-            }
-            returnList.appendChild(li);
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = cols;
+            bodyReturn.appendChild(tr);
         });
     }, (err) => console.error("Return queue error:", err));
 }
@@ -150,17 +161,14 @@ document.addEventListener("click", async (e) => {
 
     try {
         if (action === "serve") {
-            // Private collection (source of truth)
             await updateDoc(doc(db, "queue_entries", id), {
                 status: "served",
                 servedAt: serverTimestamp()
             });
-            // Public mirror update
             await updateDoc(doc(db, "queue_public", id), {
                 status: "served",
                 servedAt: serverTimestamp()
             }).catch(async () => {
-                // If mirror missing, create it
                 await setDoc(doc(db, "queue_public", id), {
                     name: "", status: "served", servedAt: serverTimestamp(), createdAt: serverTimestamp()
                 });
