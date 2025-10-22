@@ -18,47 +18,50 @@
       </a>
     </header>
 
-    <!-- Main Queue -->
-    <section class="card queue-block">
-      <h3>Main Queue</h3>
-      <table style="width:100%; border-collapse:collapse;">
-        <thead>
-          <tr>
-            <th style="text-align:left; padding:8px;">Name</th>
-            <th style="text-align:left; padding:8px;">Notify</th>
-            <th style="text-align:left; padding:8px;">Phone</th>
-            <th style="text-align:left; padding:8px;">Email</th>
-            <th style="text-align:left; padding:8px;">Joined</th>
-            <th style="text-align:left; padding:8px;">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="queueBodyMain"></tbody>
-      </table>
-      <p id="emptyMain" class="muted" style="margin-top:12px; display:none;">
-        No entries in the main queue.
-      </p>
-    </section>
+    <!-- Stacked queues -->
+    <div class="queues" style="display:grid; gap:18px;">
+      <!-- Main Queue -->
+      <section class="card queue-block" id="mainBlock">
+        <h3>Main Queue</h3>
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left; padding:8px;">Name</th>
+              <th style="text-align:left; padding:8px;">Notify</th>
+              <th style="text-align:left; padding:8px;">Phone</th>
+              <th style="text-align:left; padding:8px;">Email</th>
+              <th style="text-align:left; padding:8px;">Joined</th>
+              <th style="text-align:left; padding:8px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="queueBodyMain"></tbody>
+        </table>
+        <p id="emptyMain" class="muted" style="margin-top:12px; display:none;">
+          No entries in the main queue.
+        </p>
+      </section>
 
-    <!-- Return Queue (same size/styles as main) -->
-    <section class="card queue-block">
-      <h3>Return Queue</h3>
-      <table style="width:100%; border-collapse:collapse;">
-        <thead>
-          <tr>
-            <th style="text-align:left; padding:8px;">Name</th>
-            <th style="text-align:left; padding:8px;">Notify</th>
-            <th style="text-align:left; padding:8px;">Phone</th>
-            <th style="text-align:left; padding:8px;">Email</th>
-            <th style="text-align:left; padding:8px;">Joined</th>
-            <th style="text-align:left; padding:8px;">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="queueBodyReturn"></tbody>
-      </table>
-      <p id="emptyReturn" class="muted" style="margin-top:12px; display:none;">
-        Empty for now.
-      </p>
-    </section>
+      <!-- Return Queue (same layout/width as Main). Hidden for non-admins in admin.js -->
+      <section class="card queue-block" id="returnBlock" style="display:none;">
+        <h3>Return Queue</h3>
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left; padding:8px;">Name</th>
+              <th style="text-align:left; padding:8px;">Notify</th>
+              <th style="text-align:left; padding:8px;">Phone</th>
+              <th style="text-align:left; padding:8px;">Email</th>
+              <th style="text-align:left; padding:8px;">Joined</th>
+              <th style="text-align:left; padding:8px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="queueBodyReturn"></tbody>
+        </table>
+        <p id="emptyReturn" class="muted" style="margin-top:12px; display:none;">
+          Empty for now.
+        </p>
+      </section>
+    </div>
   </main>
 
   <script src="config.js"></script>

@@ -1,25 +1,24 @@
 // admin.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import {
-    getFirestore, connectFirestoreEmulator,
-    collection, query, where, orderBy, onSnapshot,
-    doc, getDoc, setDoc, updateDoc, deleteDoc,
-    serverTimestamp, Timestamp
+  getFirestore, connectFirestoreEmulator,
+  collection, query, where, orderBy, onSnapshot,
+  doc, getDoc, setDoc, updateDoc, deleteDoc,
+  serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-
 import {
-    getAuth, connectAuthEmulator, onAuthStateChanged
+  getAuth, connectAuthEmulator, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
 /* --- Init + (conditional) Emulators --- */
-const app = initializeApp(window.FIREBASE_CONFIG);
-const db = getFirestore(app);
+const app  = initializeApp(window.FIREBASE_CONFIG);
+const db   = getFirestore(app);
 const auth = getAuth(app);
 
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-    connectFirestoreEmulator(db, "localhost", 8080);
-    connectAuthEmulator(auth, "http://localhost:9099");
-    console.log("[admin] Connected to emulators (Firestore @8080, Auth @9099)");
+  connectFirestoreEmulator(db, "localhost", 8080);
+  connectAuthEmulator(auth, "http://localhost:9099");
+  console.log("[admin] Connected to emulators (Firestore @8080, Auth @9099)");
 }
 
 /* --- DOM refs --- */
@@ -27,56 +26,49 @@ const bodyMain    = document.getElementById("queueBodyMain");
 const emptyMain   = document.getElementById("emptyMain");
 const bodyReturn  = document.getElementById("queueBodyReturn");
 const emptyReturn = document.getElementById("emptyReturn");
+const returnBlock = document.getElementById("returnBlock"); // whole Return card (hide for non-admin)
 
 /* --- helpers --- */
 const fmt = (ts) => {
-    if (!ts) return "";
-    const d = ts instanceof Timestamp ? ts.toDate() : ts;
-    return new Intl.DateTimeFormat(undefined, {
-        month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit"
-    }).format(d);
+  if (!ts) return "";
+  const d = ts instanceof Timestamp ? ts.toDate() : ts;
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit"
+  }).format(d);
 };
-
 const btn = (label, action, id) =>
-    `<button data-action="${action}" data-id="${id}" class="btn-sm">${label}</button>`;
+  `<button data-action="${action}" data-id="${id}" class="btn-sm">${label}</button>`;
 
 /* --- Admin detection --- */
 async function isAdminEmail(email) {
-    if (!email) return false;
-    const snap = await getDoc(doc(db, "adminEmails", email.toLowerCase()));
-    return snap.exists();
+  if (!email) return false;
+  const snap = await getDoc(doc(db, "adminEmails", email.toLowerCase()));
+  return snap.exists();
 }
 
 /* --- Live listeners (switchable) --- */
 let unsubWaiting = null;
-let unsubReturn = null;
+let unsubReturn  = null;
 
 function attachListeners(baseCollection, isAdmin) {
-    // clean up any old listeners
-    unsubWaiting?.(); unsubReturn?.();
+  // Clean up old listeners
+  unsubWaiting?.(); unsubWaiting = null;
+  unsubReturn?.();  unsubReturn  = null;
 
-    const qWaiting = query(
-        collection(db, baseCollection),
-        where("status", "==", "waiting"),
-        orderBy("createdAt", "asc")
-    );
+  // MAIN queue listener (always shown)
+  const qWaiting = query(
+    collection(db, baseCollection),
+    where("status", "==", "waiting"),
+    orderBy("createdAt", "asc")
+  );
+  unsubWaiting = onSnapshot(qWaiting, (snap) => {
+    bodyMain.innerHTML = "";
+    emptyMain.style.display = snap.empty ? "block" : "none";
 
-    const qReturn = query(
-        collection(db, baseCollection),
-        where("status", "==", "return"),
-        orderBy("createdAt", "asc")
-    );
-
-    // MAIN: table rows
-    unsubWaiting = onSnapshot(qWaiting, (snap) => {
-        bodyMain.innerHTML = "";
-        emptyMain.style.display = snap.empty ? "block" : "none";
-
-        snap.forEach((row) => {
-            const d = row.data();
-
-            const cols = isAdmin
-                ? `
+    snap.forEach((row) => {
+      const d = row.data();
+      const cols = isAdmin
+        ? `
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.notify ?? ""}</td>
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.phone ?? ""}</td>
@@ -88,7 +80,7 @@ function attachListeners(baseCollection, isAdmin) {
             ${btn("Remove", "remove", row.id)}
           </td>
         `
-                : `
+        : `
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
@@ -97,22 +89,28 @@ function attachListeners(baseCollection, isAdmin) {
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
         `;
 
-            const tr = document.createElement("tr");
-            tr.innerHTML = cols;
-            bodyMain.appendChild(tr);
-        });
-    }, (err) => console.error("Main queue error:", err));
+      const tr = document.createElement("tr");
+      tr.innerHTML = cols;
+      bodyMain.appendChild(tr);
+    });
+  }, (err) => console.error("Main queue error:", err));
 
-    // RETURN: same table structure & width as main (Serve / Remove)
+  // RETURN queue: only for admins
+  if (isAdmin) {
+    returnBlock.style.display = ""; // show card
+
+    const qReturn = query(
+      collection(db, baseCollection),
+      where("status", "==", "return"),
+      orderBy("createdAt", "asc")
+    );
     unsubReturn = onSnapshot(qReturn, (snap) => {
-        bodyReturn.innerHTML = "";
-        emptyReturn.style.display = snap.empty ? "block" : "none";
+      bodyReturn.innerHTML = "";
+      emptyReturn.style.display = snap.empty ? "block" : "none";
 
-        snap.forEach((row) => {
-            const d = row.data();
-
-            const cols = isAdmin
-                ? `
+      snap.forEach((row) => {
+        const d = row.data();
+        const cols = `
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.notify ?? ""}</td>
           <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.phone ?? ""}</td>
@@ -122,78 +120,75 @@ function attachListeners(baseCollection, isAdmin) {
             ${btn("Serve", "serve", row.id)}
             ${btn("Remove", "remove", row.id)}
           </td>
-        `
-                : `
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${fmt(d.createdAt)}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
         `;
-
-            const tr = document.createElement("tr");
-            tr.innerHTML = cols;
-            bodyReturn.appendChild(tr);
-        });
+        const tr = document.createElement("tr");
+        tr.innerHTML = cols;
+        bodyReturn.appendChild(tr);
+      });
     }, (err) => console.error("Return queue error:", err));
+  } else {
+    // Hide the Return card and ensure we aren't listening to it
+    returnBlock.style.display = "none";
+    emptyReturn.style.display = "none";
+    bodyReturn.innerHTML = "";
+    unsubReturn?.(); unsubReturn = null;
+  }
 }
 
 /* --- Gate listeners by role --- */
 onAuthStateChanged(auth, async (u) => {
-    const admin = await isAdminEmail(u?.email);
-    const base = admin ? "queue_entries" : "queue_public";
-    attachListeners(base, admin);
+  const admin = await isAdminEmail(u?.email);
+  const base  = admin ? "queue_entries" : "queue_public";
+  attachListeners(base, admin);
 });
 
 /* --- Actions (admin only) --- */
 document.addEventListener("click", async (e) => {
-    const t = e.target;
-    if (!(t instanceof HTMLElement)) return;
-    const action = t.getAttribute("data-action");
-    const id = t.getAttribute("data-id");
-    if (!action || !id) return;
+  const t = e.target;
+  if (!(t instanceof HTMLElement)) return;
+  const action = t.getAttribute("data-action");
+  const id     = t.getAttribute("data-id");
+  if (!action || !id) return;
 
-    // Only allow actions for admins
-    const user = auth.currentUser;
-    const admin = await isAdminEmail(user?.email);
-    if (!admin) return; // silently ignore clicks for viewers
+  const user  = auth.currentUser;
+  const admin = await isAdminEmail(user?.email);
+  if (!admin) return; // ignore clicks for viewers
 
-    try {
-        if (action === "serve") {
-            await updateDoc(doc(db, "queue_entries", id), {
-                status: "served",
-                servedAt: serverTimestamp()
-            });
-            await updateDoc(doc(db, "queue_public", id), {
-                status: "served",
-                servedAt: serverTimestamp()
-            }).catch(async () => {
-                await setDoc(doc(db, "queue_public", id), {
-                    name: "", status: "served", servedAt: serverTimestamp(), createdAt: serverTimestamp()
-                });
-            });
+  try {
+    if (action === "serve") {
+      await updateDoc(doc(db, "queue_entries", id), {
+        status: "served",
+        servedAt: serverTimestamp()
+      });
+      await updateDoc(doc(db, "queue_public", id), {
+        status: "served",
+        servedAt: serverTimestamp()
+      }).catch(async () => {
+        await setDoc(doc(db, "queue_public", id), {
+          name: "", status: "served", servedAt: serverTimestamp(), createdAt: serverTimestamp()
+        });
+      });
 
-        } else if (action === "return") {
-            await updateDoc(doc(db, "queue_entries", id), {
-                status: "return",
-                returnAt: serverTimestamp()
-            });
-            await updateDoc(doc(db, "queue_public", id), {
-                status: "return",
-                returnAt: serverTimestamp()
-            }).catch(async () => {
-                await setDoc(doc(db, "queue_public", id), {
-                    name: "", status: "return", returnAt: serverTimestamp(), createdAt: serverTimestamp()
-                });
-            });
+    } else if (action === "return") {
+      await updateDoc(doc(db, "queue_entries", id), {
+        status: "return",
+        returnAt: serverTimestamp()
+      });
+      await updateDoc(doc(db, "queue_public", id), {
+        status: "return",
+        returnAt: serverTimestamp()
+      }).catch(async () => {
+        await setDoc(doc(db, "queue_public", id), {
+          name: "", status: "return", returnAt: serverTimestamp(), createdAt: serverTimestamp()
+        });
+      });
 
-        } else if (action === "remove") {
-            await deleteDoc(doc(db, "queue_entries", id));
-            await deleteDoc(doc(db, "queue_public", id)).catch(() => { });
-        }
-    } catch (err) {
-        console.error("Admin action failed:", err);
-        alert(`Action failed: ${err?.code || ""} ${err?.message || err}`);
+    } else if (action === "remove") {
+      await deleteDoc(doc(db, "queue_entries", id));
+      await deleteDoc(doc(db, "queue_public", id)).catch(() => {});
     }
+  } catch (err) {
+    console.error("Admin action failed:", err);
+    alert(`Action failed: ${err?.code || ""} ${err?.message || err}`);
+  }
 });
