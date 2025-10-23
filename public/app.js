@@ -18,7 +18,8 @@ import {
 const app = initializeApp(window.FIREBASE_CONFIG);
 const db  = getFirestore(app);
 
-if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+if (location.hostname === "localhost" || location.hostname === "127.0.0.1") 
+{
   connectFirestoreEmulator(db, "localhost", 8080);
   console.log("[queue] Firestore: connected to EMULATOR @ localhost:8080");
 }
@@ -43,16 +44,18 @@ function showErr(text) {
 
 /** Compute the user's 1-based position in the waiting queue by ID.
  *  Retries briefly to allow serverTimestamp() to materialize. */
-async function getPositionById(docId, { attempts = 5, delayMs = 300 } = {}) {
-  for (let i = 0; i < attempts; i++) {
-    const q = query(
-      collection(db, "queue_entries"),
-      where("status", "==", "waiting"),
-      orderBy("createdAt", "asc")
-    );
-    const snap = await getDocs(q);
-    const idx = snap.docs.findIndex(d => d.id === docId);
-    if (idx !== -1) return idx + 1;
+async function getPositionById(docId, { attempts = 5, delayMs = 300 } = {})
+{
+  for (let i = 0; i < attempts; i++) 
+    {
+      const q = query(collection(db, "queue_entries"), where("status", "==", "waiting"), orderBy("createdAt", "asc"));
+      const snap = await getDocs(q);
+      const idx = snap.docs.findIndex(d => d.id === docId);
+      if (idx !== -1)
+      {
+        return idx + 1;
+      }
+      
     // wait a bit and retry (createdAt may not be set yet)
     await new Promise(res => setTimeout(res, delayMs));
   }
@@ -74,13 +77,15 @@ form.addEventListener("submit", async (e) => {
   if (notify === "email" && !email) return showErr("Add an email address.");
   if (notify === "both" && !phone && !email) return showErr("Add at least one contact method.");
 
-  try {
+  try
+  {
     // Write to private source of truth
-    const docRef = await addDoc(collection(db, "queue_entries"), {
+    const docRef = await addDoc(collection(db, "queue_entries"), 
+    {
       name,
       phone: phone || null,
       email: email || null,
-      notify,                // 'sms' | 'email' | 'both'
+      notify,
       status: "waiting",
       createdAt: serverTimestamp()
     });
@@ -125,7 +130,7 @@ form.addEventListener("submit", async (e) => {
       showOk("You're in! Your position will update shortly.");
     }
   }
-  
+
   catch (e2)
   {
     console.error("[queue] write failed:", e2);
