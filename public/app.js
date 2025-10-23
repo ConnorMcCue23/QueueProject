@@ -96,13 +96,38 @@ form.addEventListener("submit", async (e) => {
 
     // Compute the user's numeric position
     const pos = await getPositionById(docRef.id);
-    if (pos != null) {
-      showOk(`You're in! Your position: ${pos}`);
-    } else {
+    if (pos != null) 
+    {
+      if (pos % 10 == 1)
+      {
+        showOk (`You're in! Your position: ${pos}st`)
+      }
+
+      else if (pos % 10 == 2)
+      {
+        showOk (`You're in! Your position: ${pos}nd`)
+      }
+
+      else if (pos % 10 == 3)
+      {
+        showOk (`You're in! Your position: ${pos}rd`)
+      }
+
+      else
+      {
+        showOk(`You're in! Your position: ${pos}th`);
+      }
+    }
+
+    else
+    {
       // Fallback if timestamp lag prevented finding position
       showOk("You're in! Your position will update shortly.");
     }
-  } catch (e2) {
+  }
+  
+  catch (e2)
+  {
     console.error("[queue] write failed:", e2);
     showErr("Could not join the queue. Please try again.");
   }
