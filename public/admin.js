@@ -71,24 +71,22 @@ function attachListeners(baseCollection, isAdmin) {
       const d = row.data();
       const cols = isAdmin
         ? `
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.notify ?? ""}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.phone ?? ""}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.email ?? ""}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${fmt(d.createdAt)}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.phone ?? ""}</td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.email ?? ""}</td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)">${fmt(d.createdAt)}</td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)">
             ${btn("Serve", "serve", row.id)}
             ${btn("No-show", "return", row.id)}
             ${btn("Remove", "remove", row.id)}
           </td>
         `
         : `
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${fmt(d.createdAt)}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)">${fmt(d.createdAt)}</td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)"></td>
         `;
 
       const tr = document.createElement("tr");
@@ -115,12 +113,11 @@ function attachListeners(baseCollection, isAdmin) {
         const d = row.data();
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.notify ?? ""}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.phone ?? ""}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.email ?? ""}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">${fmt(d.createdAt)}</td>
-          <td style="padding:8px; border-top:1px solid rgba(0,0,0,.08)">
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.name ?? ""}</td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.phone ?? ""}</td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)">${d.email ?? ""}</td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)">${fmt(d.createdAt)}</td>
+          <td style="text-align:center; padding:8px; border-top:1px solid rgba(0,0,0,.08)">
             ${btn("Serve", "serve", row.id)}
             ${btn("Remove", "remove", row.id)}
           </td>

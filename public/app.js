@@ -12,7 +12,8 @@ import {
   query,
   where,
   orderBy,
-  getDocs
+  getDocs,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
 const app = initializeApp(window.FIREBASE_CONFIG);
@@ -65,32 +66,54 @@ async function getPositionById(docId, { attempts = 5, delayMs = 300 } = {})
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const data   = Object.fromEntries(new FormData(form).entries());
-  const name   = (data.name || "").trim();
-  const phone  = (data.phone || "").trim();
-  const email  = (data.email || "").trim().toLowerCase();
-  const notify = data.notify || "";
+  const data    = Object.fromEntries(new FormData(form).entries());
+  const name    = (data.name || "").trim();
+  const phone   = (data.phone || "").trim();
+  const email   = (data.email || "").trim().toLowerCase();
+  const checkin = (data.checkin || "").trim(); // NEW
 
-  if (!name) return showErr("Please enter your name.");
-  if (!notify) return showErr("Please choose a notification method.");
-  if (notify === "sms" && !phone) return showErr("Add a phone number for SMS.");
-  if (notify === "email" && !email) return showErr("Add an email address.");
-  if (notify === "both" && !phone && !email) return showErr("Add at least one contact method.");
-
-  try
+  // existing validation
+  if (!name) 
   {
-    // Write to private source of truth
-    const docRef = await addDoc(collection(db, "queue_entries"), 
-    {
+    return showErr("Please enter your name.");
+  }
+
+if (!email) 
+{
+  return showErr("Please enter an email so we can contact you.");
+}
+
+if (!checkin) 
+{
+  return showErr("Please enter the event code (ask staff).");
+}
+
+  // NEW: fetch currentJoinCode from Firestore and verify the attendee is physically checked in
+  try {
+    const settingsRef = doc(db, "settings", "event");
+    const settingsSnap = await getDoc(settingsRef);
+    const liveCode = settingsSnap.exists() ? settingsSnap.data().currentJoinCode : null;
+
+    if (!liveCode || checkin !== liveCode) {
+      return showErr("Invalid code. Please ask staff for the current event code.");
+    }
+  } catch (errFetch) {
+    console.error("[queue] failed to verify code:", errFetch);
+    return showErr("We're having trouble verifying the code. Please ask staff.");
+  }
+
+  // If we got here: code is valid, continue with your existing logic
+  try {
+    // 1. Write full private record
+    const docRef = await addDoc(collection(db, "queue_entries"), {
       name,
       phone: phone || null,
       email: email || null,
-      notify,
       status: "waiting",
       createdAt: serverTimestamp()
     });
 
-    // Mirror minimal public data (optional but keeps public view fresh)
+    // 2. Mirror the safe public record
     await setDoc(doc(db, "queue_public", docRef.id), {
       name,
       status: "waiting",
@@ -99,40 +122,22 @@ form.addEventListener("submit", async (e) => {
 
     form.reset();
 
-    // Compute the user's numeric position
+    // 3. Compute initial position (your existing helper)
     const pos = await getPositionById(docRef.id);
-    if (pos != null) 
-    {
-      if (pos % 10 == 1)
-      {
-        showOk (`You're in! Your position: ${pos}st`)
-      }
-
-      else if (pos % 10 == 2)
-      {
-        showOk (`You're in! Your position: ${pos}nd`)
-      }
-
-      else if (pos % 10 == 3)
-      {
-        showOk (`You're in! Your position: ${pos}rd`)
-      }
-
-      else
-      {
+    if (pos != null) {
+      if (pos % 10 == 1) {
+        showOk(`You're in! Your position: ${pos}st`);
+      } else if (pos % 10 == 2) {
+        showOk(`You're in! Your position: ${pos}nd`);
+      } else if (pos % 10 == 3) {
+        showOk(`You're in! Your position: ${pos}rd`);
+      } else {
         showOk(`You're in! Your position: ${pos}th`);
       }
-    }
-
-    else
-    {
-      // Fallback if timestamp lag prevented finding position
+    } else {
       showOk("You're in! Your position will update shortly.");
     }
-  }
-
-  catch (e2)
-  {
+  } catch (e2) {
     console.error("[queue] write failed:", e2);
     showErr("Could not join the queue. Please try again.");
   }

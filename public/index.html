@@ -10,7 +10,7 @@
 <body>
   <main class="wrap">
     <header>
-      <!--<img src="images/ceedLogo.png" alt="Logo" class="corner-img" /> !-->
+      <!--<img src="images/ceedLogo.png" alt="Logo" class="corner-img" /> -->
       <h1>Join the Queue</h1>
       <p class="desc">
         Enter your info here to be placed in line! We will send you a notification when there are 5
@@ -22,32 +22,47 @@
       <form id="joinForm" autocomplete="off" novalidate>
         <div class="field">
           <label for="name">Name</label>
-          <input id="name" name="name" class="control" required placeholder="Name" autocomplete="off" />
+          <input
+            id="name"
+            name="name"
+            class="control"
+            required
+            placeholder="Name"
+            autocomplete="off"
+          />
         </div>
 
         <div class="field">
-          <label for="notify">Preferred Notification</label>
-          <select id="notify" name="notify" class="control" required>
-            <option value="" disabled selected>-- Select --</option>
-            <option value="sms">Text (SMS)</option>
-            <option value="email">Email</option>
-            <option value="both">Both</option>
-          </select>
+            <label for="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              class="control"
+              type="email"
+              placeholder="Your Email"
+              autocomplete="off"
+            />
+          </div>
+
+        <div class="field">
+            <label for="phone">Phone (optional — only if you're okay with us texting you directly)</label>
+            <input id="phone" name="phone" class="control" inputmode="tel" placeholder="+1 123 456 7890"autocomplete="off"/>
         </div>
 
-        <div class="grid-2">
-          <div class="field">
-            <label for="phone">Phone</label>
-            <input id="phone" name="phone" class="control" inputmode="tel" placeholder="+1 123 456 7890" autocomplete="off" />
-          </div>
-
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" name="email" class="control" type="email" placeholder="Your Email" autocomplete="off" />
-          </div>
+        <div class="field">
+          <label for="checkin">Event Code</label>
+          <input
+            id="checkin"
+            name="checkin"
+            class="control"
+            required
+            placeholder="Ask staff for code"
+            autocomplete="off"
+          />
         </div>
 
         <button type="submit" class="btn">Join the Line</button>
+
         <div id="msg" class="note" role="status" aria-live="polite"></div>
         <div id="err" class="alert" role="alert" aria-live="assertive"></div>
       </form>
@@ -56,46 +71,127 @@
     <div class="button-row">
       <button id="loginBtn" class="btn-sm">Sign in with Google</button>
       <a href="admin.html" class="btn-sm">Check Queue</a>
+
+      <!-- NEW: only visible to admins after sign-in -->
+      <button id="rotateCodeBtn" class="btn-sm" style="display:none;">
+        Rotate Join Code
+      </button>
     </div>
   </main>
 
   <script src="config.js"></script>
   <script type="module" src="./app.js"></script>
 
+  <!-- Auth + Admin Controls + Rotate Code logic -->
   <script type="module">
     import { getApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import {
-      getAuth, connectAuthEmulator,
-      GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    const app = getApp();          // relies on initializeApp having run in app.js
+    import {
+      getAuth,
+      connectAuthEmulator,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+    import {
+      getFirestore,
+      connectFirestoreEmulator,
+      doc,
+      getDoc,
+      updateDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    // --- Init app/auth/db using same app as app.js ---
+    const app = getApp();
     const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    // Emulator wiring for local dev
     if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
       connectAuthEmulator(auth, "http://localhost:9099");
+      connectFirestoreEmulator(db, "localhost", 8080);
     }
 
-    const db = getFirestore(app);
-    const provider = new GoogleAuthProvider();
-    const loginBtn = document.getElementById("loginBtn");
+    // DOM refs
+    const loginBtn      = document.getElementById("loginBtn");
+    const rotateCodeBtn = document.getElementById("rotateCodeBtn");
 
-    onAuthStateChanged(auth, (user) => {
+    // Helper: check if this user is an allowed admin
+    async function isAdminEmail(email) {
+      if (!email) return false;
+      const ref  = doc(db, "adminEmails", email.toLowerCase());
+      const snap = await getDoc(ref);
+      return snap.exists();
+    }
+
+    // Auth state listener
+    onAuthStateChanged(auth, async (user) => {
+      // Update login button label
       loginBtn.textContent = user
         ? `Sign out (signed in as ${user.email})`
         : "Sign in with Google";
+
+      // Check admin status
+      if (user && await isAdminEmail(user.email)) {
+        rotateCodeBtn.style.display = "inline-block";
+      } else {
+        rotateCodeBtn.style.display = "none";
+      }
     });
 
+    // Login / logout button behavior
     loginBtn.addEventListener("click", async () => {
       if (auth.currentUser) {
+        // Already signed in -> sign out
         await signOut(auth);
       } else {
+        // Not signed in -> sign in
         try {
+          const provider = new GoogleAuthProvider();
           await signInWithPopup(auth, provider);
         } catch (e) {
           console.error("Sign-in failed", e);
           alert("Sign-in failed: " + e.message);
         }
+      }
+    });
+
+    // Admin-only: rotate the join code
+    rotateCodeBtn.addEventListener("click", async () => {
+      // Double-check user still admin before letting them write
+      const user = auth.currentUser;
+      if (!user || !(await isAdminEmail(user.email))) {
+        alert("You do not have permission to rotate the code.");
+        return;
+      }
+
+      const newCode = prompt(
+        "Enter new join code (example: BANANAPEEL). " +
+        "Anyone with the old code will no longer be able to join."
+      );
+      if (!newCode) return;
+
+      const really = confirm(
+        `Rotate code to "${newCode}"?\n\n` +
+        "This will block the old code immediately."
+      );
+      if (!really) return;
+
+      try {
+        await updateDoc(doc(db, "settings", "event"), {
+          currentJoinCode: newCode.trim(),
+          lastUpdated: serverTimestamp()
+        });
+        alert(
+          `Join code updated to "${newCode}".\n` +
+          "Write it on the sign / tell attendees to use this new code."
+        );
+      } catch (err) {
+        console.error("Failed to rotate code:", err);
+        alert("Could not update code. Check your admin access.");
       }
     });
   </script>
